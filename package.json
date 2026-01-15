@@ -1,0 +1,24 @@
+{
+  "name": "multiaudio-webrtc",
+  "version": "1.0.0",
+  "description": "Mobile-first WebRTC audio streaming - One host streams live audio to multiple listeners",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "keywords": [
+    "webrtc",
+    "audio",
+    "streaming",
+    "live",
+    "mobile"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@distube/ytdl-core": "^4.16.12",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2"
+  }
+}

@@ -1144,6 +1144,14 @@
                  HOME SCREEN - Choose Role
                  ======================================================== -->
             <section id="screen-home" class="screen active">
+                <!-- Connection Status -->
+                <div class="card" style="margin-bottom: 1rem;">
+                    <div class="status-item" style="justify-content: center; font-size: 0.9rem;">
+                        <span class="status-dot disconnected" id="home-connection-dot"></span>
+                        <span id="home-connection-text">Connecting...</span>
+                    </div>
+                </div>
+                
                 <div class="card">
                     <p class="text-center" style="color: var(--text-secondary); line-height: 1.6;">
                         Stream audio from your microphone to multiple listeners in real-time using WebRTC.

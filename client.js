@@ -220,6 +220,8 @@ const elements = {
     listenerRoomCode: document.getElementById('listener-room-code'),
     
     // Status elements
+    homeConnectionDot: document.getElementById('home-connection-dot'),
+    homeConnectionText: document.getElementById('home-connection-text'),
     hostConnectionDot: document.getElementById('host-connection-dot'),
     hostConnectionText: document.getElementById('host-connection-text'),
     hostStreamStatus: document.getElementById('host-stream-status'),
@@ -274,8 +276,16 @@ function updateConnectionStatus(isHost, connected, text) {
     const dot = isHost ? elements.hostConnectionDot : elements.listenerConnectionDot;
     const textEl = isHost ? elements.hostConnectionText : elements.listenerConnectionText;
     
-    dot.className = 'status-dot ' + (connected ? 'connected' : 'disconnected');
-    textEl.textContent = text;
+    if (dot && textEl) {
+        dot.className = 'status-dot ' + (connected ? 'connected' : 'disconnected');
+        textEl.textContent = text;
+    }
+    
+    // Also update home screen status
+    if (elements.homeConnectionDot && elements.homeConnectionText) {
+        elements.homeConnectionDot.className = 'status-dot ' + (connected ? 'connected' : 'disconnected');
+        elements.homeConnectionText.textContent = connected ? 'Connected to server' : (text || 'Disconnected');
+    }
 }
 
 // =============================================================================
@@ -608,9 +618,19 @@ function initSocket() {
  * Create a new room as host
  */
 async function createRoom() {
+    // Check if socket is connected
+    if (!state.socket || !state.socket.connected) {
+        console.error('[Host] Socket not connected');
+        alert('Not connected to server. Please wait for connection and try again.');
+        return;
+    }
+    
     state.isHost = true;
     
+    console.log('[Host] Creating room...');
     state.socket.emit('create-room', (response) => {
+        console.log('[Host] Create room response:', response);
+        
         if (response.success) {
             state.roomId = response.roomId;
             
@@ -630,7 +650,8 @@ async function createRoom() {
             // Check mobile and set default audio source
             initAudioSourceUI();
         } else {
-            alert('Failed to create room. Please try again.');
+            console.error('[Host] Failed to create room:', response.error || 'Unknown error');
+            alert('Failed to create room: ' + (response.error || 'Unknown error'));
         }
     });
 }
@@ -2653,6 +2674,9 @@ function init() {
     console.log('='.repeat(50));
     console.log('  MultiAudio - WebRTC Audio Streaming Client');
     console.log('='.repeat(50));
+    
+    // Set initial connection status
+    updateConnectionStatus(false, false, 'Connecting...');
     
     // Initialize Socket.IO
     initSocket();

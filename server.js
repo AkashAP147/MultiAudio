@@ -294,13 +294,18 @@ const io = new Server(server, {
     pingTimeout: 30000,      // 30 seconds before considering connection dead
     pingInterval: 10000,     // Send ping every 10 seconds for faster detection
     upgradeTimeout: 30000,   // 30 seconds to upgrade connection
-    transports: ['websocket', 'polling'], // Prefer WebSocket
+    transports: ['polling', 'websocket'], // Prefer polling in production to avoid SSL issues
     allowUpgrades: true,
     // Connection recovery settings
     connectionStateRecovery: {
         maxDisconnectionDuration: 2 * 60 * 1000, // 2 minutes
         skipMiddlewares: true
-    }
+    },
+    // Production-specific settings
+    ...(process.env.NODE_ENV === 'production' && {
+        allowEIO3: true, // Allow Engine.IO v3 clients
+        serveClient: false // Don't serve client files in production
+    })
 });
 
 const PORT = process.env.PORT || 3000;

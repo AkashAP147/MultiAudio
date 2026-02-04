@@ -369,19 +369,27 @@ async function copyToClipboard(text) {
  */
 function initSocket() {
     // Connect to signaling server with optimized settings
+    const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    
     state.socket = io({
-        transports: ['websocket', 'polling'], // WebSocket preferred, polling fallback
+        transports: isProduction ? ['polling', 'websocket'] : ['websocket', 'polling'], // Prefer polling in production
         reconnection: true,
         reconnectionAttempts: 10,
         reconnectionDelay: 1000,
         reconnectionDelayMax: 5000,
         timeout: 20000,
-        forceNew: false
+        forceNew: false,
+        // Production-specific settings
+        ...(isProduction && {
+            upgrade: true,
+            rememberUpgrade: false // Don't remember transport upgrades
+        })
     });
 
     // Connection established
     state.socket.on('connect', () => {
         console.log('[Socket] Connected:', state.socket.id);
+        console.log('[Socket] Transport:', state.socket.io.engine.transport.name);
         state.reconnectAttempts = 0;
         state.isReconnecting = false;
         updateConnectionStatus(state.isHost, true, 'Connected');

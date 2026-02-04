@@ -795,23 +795,31 @@ server.listen(PORT, () => {
     console.log('='.repeat(60));
     console.log('  MULTIAUDIO - WebRTC Audio Streaming Server (HTTPS)');
     console.log('='.repeat(60));
-    console.log(`  HTTPS:    https://localhost:${PORT}`);
-    console.log(`  HTTP:     http://localhost:${HTTP_PORT} (redirects to HTTPS)`);
-    console.log('');
-    console.log('  For mobile testing on same network:');
-    console.log('  1. Find your computer\'s local IP (ipconfig / ifconfig)');
-    console.log('  2. Open https://YOUR_IP:' + PORT + ' on mobile');
-    console.log('  3. Accept the self-signed certificate warning');
-    console.log('');
-    console.log('  NOTE: Self-signed cert - browser will show warning.');
-    console.log('  Click "Advanced" → "Proceed" to continue.');
+    
+    if (process.env.NODE_ENV === 'production') {
+        console.log(`  Server running on port ${PORT}`);
+        console.log('  Production deployment ready');
+    } else {
+        console.log(`  HTTPS:    https://localhost:${PORT}`);
+        console.log(`  HTTP:     http://localhost:${HTTP_PORT} (redirects to HTTPS)`);
+        console.log('');
+        console.log('  For mobile testing on same network:');
+        console.log('  1. Find your computer\'s local IP (ipconfig / ifconfig)');
+        console.log('  2. Open https://YOUR_IP:' + PORT + ' on mobile');
+        console.log('  3. Accept the self-signed certificate warning');
+        console.log('');
+        console.log('  NOTE: Self-signed cert - browser will show warning.');
+        console.log('  Click "Advanced" → "Proceed" to continue.');
+    }
     console.log('='.repeat(60));
 });
 
-// Start HTTP redirect server
-httpServer.listen(HTTP_PORT, () => {
-    console.log(`[HTTP] Redirect server on port ${HTTP_PORT}`);
-});
+// Start HTTP redirect server (only in development)
+if (process.env.NODE_ENV !== 'production') {
+    httpServer.listen(HTTP_PORT, () => {
+        console.log(`[HTTP] Redirect server on port ${HTTP_PORT}`);
+    });
+}
 
 // Graceful shutdown - use 'once' to prevent multiple calls
 let isShuttingDown = false;

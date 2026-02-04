@@ -41,54 +41,58 @@ const certsDir = path.join(__dirname, 'certs');
 const keyPath = path.join(certsDir, 'key.pem');
 const certPath = path.join(certsDir, 'cert.pem');
 
-// Check if we need to generate certificates
+// Check if we need SSL certificates (only in development)
 let sslOptions = null;
 
-try {
-    // Try to load existing certificates
-    if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
-        sslOptions = {
-            key: fs.readFileSync(keyPath),
-            cert: fs.readFileSync(certPath)
-        };
-        console.log('[SSL] Loaded existing certificates from ./certs/');
+if (process.env.NODE_ENV !== 'production') {
+    try {
+        // Try to load existing certificates
+        if (fs.existsSync(keyPath) && fs.existsSync(certPath)) {
+            sslOptions = {
+                key: fs.readFileSync(keyPath),
+                cert: fs.readFileSync(certPath)
+            };
+            console.log('[SSL] Loaded existing certificates from ./certs/');
+        }
+    } catch (err) {
+        console.log('[SSL] Could not load certificates:', err.message);
     }
-} catch (err) {
-    console.log('[SSL] Could not load certificates:', err.message);
-}
 
-// If no certificates, generate self-signed ones using Node.js crypto
-if (!sslOptions) {
-    console.log('[SSL] Generating self-signed certificate...');
+    // If no certificates, generate self-signed ones using Node.js crypto
+    if (!sslOptions) {
+        console.log('[SSL] Generating self-signed certificate...');
+        
+        // Ensure certs directory exists
+        if (!fs.existsSync(certsDir)) {
+            fs.mkdirSync(certsDir, { recursive: true });
+        }
+        
+        // Generate certificate using Node.js built-in crypto
+        const { generateKeyPairSync, createSign, randomBytes } = require('crypto');
+        
+        // Generate RSA key pair
+        const { privateKey, publicKey } = generateKeyPairSync('rsa', {
+            modulusLength: 2048,
+            publicKeyEncoding: { type: 'spki', format: 'pem' },
+            privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
+        });
+        
+        // Create a simple self-signed certificate
+        // For a proper cert, we need to build it manually
+        const forge = createSelfSignedCert();
+        
+        fs.writeFileSync(keyPath, forge.privateKey);
+        fs.writeFileSync(certPath, forge.certificate);
+        
+        sslOptions = {
+            key: forge.privateKey,
+            cert: forge.certificate
+        };
     
-    // Ensure certs directory exists
-    if (!fs.existsSync(certsDir)) {
-        fs.mkdirSync(certsDir, { recursive: true });
+        console.log('[SSL] Self-signed certificate generated');
     }
-    
-    // Generate certificate using Node.js built-in crypto
-    const { generateKeyPairSync, createSign, randomBytes } = require('crypto');
-    
-    // Generate RSA key pair
-    const { privateKey, publicKey } = generateKeyPairSync('rsa', {
-        modulusLength: 2048,
-        publicKeyEncoding: { type: 'spki', format: 'pem' },
-        privateKeyEncoding: { type: 'pkcs8', format: 'pem' }
-    });
-    
-    // Create a simple self-signed certificate
-    // For a proper cert, we need to build it manually
-    const forge = createSelfSignedCert();
-    
-    fs.writeFileSync(keyPath, forge.privateKey);
-    fs.writeFileSync(certPath, forge.certificate);
-    
-    sslOptions = {
-        key: forge.privateKey,
-        cert: forge.certificate
-    };
-    
-    console.log('[SSL] Self-signed certificate generated');
+} else {
+    console.log('[PRODUCTION] Using HTTP - Render handles HTTPS automatically');
 }
 
 /**
@@ -274,8 +278,8 @@ function generateMinimalCert(privateKeyPem, publicKeyPem) {
 
 const app = express();
 
-// Create HTTPS server
-const server = https.createServer(sslOptions, app);
+// Create server (HTTPS in development, HTTP in production)
+const server = sslOptions ? https.createServer(sslOptions, app) : http.createServer(app);
 
 // Also create HTTP server for redirect
 const httpApp = express();
@@ -790,15 +794,16 @@ httpApp.get('*', (req, res) => {
     res.redirect(`https://${host}:${PORT}${req.url}`);
 });
 
-// Start HTTPS server
+// Start server
 server.listen(PORT, () => {
     console.log('='.repeat(60));
-    console.log('  MULTIAUDIO - WebRTC Audio Streaming Server (HTTPS)');
+    console.log('  MULTIAUDIO - WebRTC Audio Streaming Server');
     console.log('='.repeat(60));
     
     if (process.env.NODE_ENV === 'production') {
         console.log(`  Server running on port ${PORT}`);
         console.log('  Production deployment ready');
+        console.log('  HTTPS handled automatically by Render');
     } else {
         console.log(`  HTTPS:    https://localhost:${PORT}`);
         console.log(`  HTTP:     http://localhost:${HTTP_PORT} (redirects to HTTPS)`);

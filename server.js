@@ -303,8 +303,8 @@ const io = new Server(server, {
     },
     // Production-specific settings
     ...(process.env.NODE_ENV === 'production' && {
-        allowEIO3: true, // Allow Engine.IO v3 clients
-        serveClient: false // Don't serve client files in production
+        allowEIO3: true // Allow Engine.IO v3 clients
+        // Note: serveClient defaults to true, so we allow serving the client library
     })
 });
 
